@@ -5,61 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>4-Player Chess Arena</title>
     <style>
-        body { background-color: #1a1a24; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .setup-panel { margin-bottom: 20px; background: #2a2a3a; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        select, button { padding: 8px 16px; font-size: 16px; font-weight: bold; background: #00bcd4; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-        button:hover { background: #00acc1; }
-        #board { display: grid; grid-template-columns: repeat(14, 40px); grid-template-rows: repeat(14, 40px); border: 4px solid #3a3a4a; background: #111; }
-        .cell { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
-        /* Grid color schemes */
-        .light { background-color: #eeeed2; color: #000; }
-        .dark { background-color: #769656; color: #fff; }
-        .void { background-color: #1a1a24; border: none; } /* Dead corners */
-        /* Piece color classes */
-        .R { color: #ef4444; } .B { color: #3b82f6; } .Y { color: #eab308; } .G { color: #22c55e; }
-        #status { margin-top: 15px; font-size: 20px; font-weight: bold; color: #00bcd4; }
+        body { background-color: #121214; color: #fff; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .setup-panel { margin-bottom: 20px; background: #1e1e24; padding: 15px; border-radius: 8px; border: 1px solid #2d2d38; }
+        select, button { padding: 8px 16px; font-size: 16px; font-weight: bold; background: #00b4d8; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
+        
+        /* 14x14 Grid Engine board configuration */
+        #board { display: grid; grid-template-columns: repeat(14, 45px); grid-template-rows: repeat(14, 45px); border: 6px solid #2d2d38; background: #121214; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .cell { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 32px; user-select: none; transition: background 0.15s; }
+        
+        /* Checkered Board Styles */
+        .light { background-color: #e2e8f0; }
+        .dark { background-color: #94a3b8; }
+        .void { background-color: #121214; } 
+
+        /* High-Visibility Neon Glow Team Brackets */
+        .R { color: #ff3b30; text-shadow: 0 0 8px rgba(255,59,48,0.4); }   /* Red Camp (Bottom) */
+        .B { color: #007aff; text-shadow: 0 0 8px rgba(0,122,255,0.4); }  /* Blue Camp (Left) */
+        .Y { color: #ffcc00; text-shadow: 0 0 8px rgba(255,204,0,0.4); }  /* Yellow Camp (Top) */
+        .G { color: #34c759; text-shadow: 0 0 8px rgba(52,199,89,0.4); }   /* Green Camp (Right) */
+        
+        #status { margin-top: 20px; font-size: 22px; font-weight: bold; color: #00b4d8; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
 
-    <h1>4-PLAYER CHESS ENGINE</h1>
+    <h1 style="color: #00b4d8; margin-bottom: 5px; font-weight: 800;">GLYPH-3: 4-WAY CHESS</h1>
     
     <div class="setup-panel">
-        <label>Human Players: </label>
+        <label style="color:#94a3b8; font-weight:bold;">Combatant Registry: </label>
         <select id="human-count" onchange="resetGame()">
             <option value="2">2 Players (2 Bots)</option>
             <option value="3">3 Players (1 Bot)</option>
             <option value="4">4 Players (0 Bots)</option>
         </select>
-        <button onclick="resetGame()" style="margin-left:15px; background:#e91e63;">Restart Match</button>
     </div>
 
     <div id="board"></div>
-    <div id="status">Red's Turn (Human)</div>
+    <div id="status">Red's Turn</div>
 
     <script>
         const BOARD_SIZE = 14;
-        let turnIndex = 0; // 0: Red, 1: Blue, 2: Yellow, 3: Green
-        let playerTypes = ["Human", "Bot", "Bot", "Bot"]; // Setup slots dynamically
         
-        // Define which slots are unplayable 3x3 corners
+        // Full starting row matrices for a 4-player layout
+        const backRowOrder = ["♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖"];
+        
         function isVoid(r, c) {
             return (r < 3 || r > 10) && (c < 3 || c > 10);
         }
 
-        function resetGame() {
-            const humanCount = parseInt(document.getElementById("human-count").value);
-            
-            // Assign which players are human vs computer bots
-            playerTypes = ["Human", "Bot", "Bot", "Bot"]; 
-            if(humanCount >= 2) playerTypes[2] = "Human"; // Opposite side (Yellow)
-            if(humanCount >= 3) playerTypes[1] = "Human"; // Left side (Blue)
-            if(humanCount === 4) playerTypes[3] = "Human"; // Right side (Green)
-
-            turnIndex = 0;
-            buildBoard();
-            document.getElementById("status").innerText = `Red's Turn (${playerTypes[0]})`;
-        }
+        function resetGame() { buildBoard(); }
 
         function buildBoard() {
             const boardContainer = document.getElementById("board");
@@ -72,38 +66,30 @@
                     if (isVoid(r, c)) {
                         cell.className = "cell void";
                     } else {
-                        // Standard alternating checkered background layout
                         const isLight = (r + c) % 2 === 0;
                         cell.className = `cell ${isLight ? 'light' : 'dark'}`;
                         
-                        // Populate initial starting kings for context demo
-                        if (r === 13 && c === 7) { cell.innerText = "♚"; cell.className += " R"; } // Red King
-                        if (r === 7 && c === 0) { cell.innerText = "♚"; cell.className += " B"; } // Blue King
-                        if (r === 0 && c === 6) { cell.innerText = "♚"; cell.className += " Y"; } // Yellow King
-                        if (r === 6 && c === 13) { cell.innerText = "♚"; cell.className += " G"; } // Green King
+                        // --- RED TEAM ARSENAL (Bottom, rows 12 & 13) ---
+                        if (r === 13 && c >= 3 && c <= 10) { cell.innerText = backRowOrder[c-3]; cell.className += " R"; }
+                        if (r === 12 && c >= 3 && c <= 10) { cell.innerText = "♙"; cell.className += " R"; }
+                        
+                        // --- YELLOW TEAM ARSENAL (Top, rows 0 & 1) ---
+                        if (r === 0 && c >= 3 && c <= 10) { cell.innerText = backRowOrder[c-3]; cell.className += " Y"; }
+                        if (r === 1 && c >= 3 && c <= 10) { cell.innerText = "♙"; cell.className += " Y"; }
+                        
+                        // --- BLUE TEAM ARSENAL (Left, columns 0 & 1) ---
+                        if (c === 0 && r >= 3 && r <= 10) { cell.innerText = backRowOrder[r-3]; cell.className += " B"; }
+                        if (c === 1 && r >= 3 && r <= 10) { cell.innerText = "♙"; cell.className += " B"; }
+                        
+                        // --- GREEN TEAM ARSENAL (Right, columns 12 & 13) ---
+                        if (c === 13 && r >= 3 && r <= 10) { cell.innerText = backRowOrder[r-3]; cell.className += " G"; }
+                        if (c === 12 && r >= 3 && r <= 10) { cell.innerText = "♙"; cell.className += " G"; }
                     }
                     boardContainer.appendChild(cell);
                 }
             }
         }
 
-        // Run turn processor loop
-        function nextTurn() {
-            turnIndex = (turnIndex + 1) % 4;
-            const colors = ["Red", "Blue", "Yellow", "Green"];
-            const currentType = playerTypes[turnIndex];
-            
-            document.getElementById("status").innerText = `${colors[turnIndex]}'s Turn (${currentType})`;
-            
-            if(currentType === "Bot") {
-                setTimeout(() => {
-                    alert(`${colors[turnIndex]} Bot instantly processed a safe defensive move!`);
-                    nextTurn();
-                }, 1000);
-            }
-        }
-
-        // Start initialization
         window.onload = resetGame;
     </script>
 </body>
