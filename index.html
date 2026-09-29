@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4-Player Chess Arena</title>
+    <style>
+        body { background-color: #1a1a24; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .setup-panel { margin-bottom: 20px; background: #2a2a3a; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        select, button { padding: 8px 16px; font-size: 16px; font-weight: bold; background: #00bcd4; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
+        button:hover { background: #00acc1; }
+        #board { display: grid; grid-template-columns: repeat(14, 40px); grid-template-rows: repeat(14, 40px); border: 4px solid #3a3a4a; background: #111; }
+        .cell { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+        /* Grid color schemes */
+        .light { background-color: #eeeed2; color: #000; }
+        .dark { background-color: #769656; color: #fff; }
+        .void { background-color: #1a1a24; border: none; } /* Dead corners */
+        /* Piece color classes */
+        .R { color: #ef4444; } .B { color: #3b82f6; } .Y { color: #eab308; } .G { color: #22c55e; }
+        #status { margin-top: 15px; font-size: 20px; font-weight: bold; color: #00bcd4; }
+    </style>
+</head>
+<body>
+
+    <h1>4-PLAYER CHESS ENGINE</h1>
+    
+    <div class="setup-panel">
+        <label>Human Players: </label>
+        <select id="human-count" onchange="resetGame()">
+            <option value="2">2 Players (2 Bots)</option>
+            <option value="3">3 Players (1 Bot)</option>
+            <option value="4">4 Players (0 Bots)</option>
+        </select>
+        <button onclick="resetGame()" style="margin-left:15px; background:#e91e63;">Restart Match</button>
+    </div>
+
+    <div id="board"></div>
+    <div id="status">Red's Turn (Human)</div>
+
+    <script>
+        const BOARD_SIZE = 14;
+        let turnIndex = 0; // 0: Red, 1: Blue, 2: Yellow, 3: Green
+        let playerTypes = ["Human", "Bot", "Bot", "Bot"]; // Setup slots dynamically
+        
+        // Define which slots are unplayable 3x3 corners
+        function isVoid(r, c) {
+            return (r < 3 || r > 10) && (c < 3 || c > 10);
+        }
+
+        function resetGame() {
+            const humanCount = parseInt(document.getElementById("human-count").value);
+            
+            // Assign which players are human vs computer bots
+            playerTypes = ["Human", "Bot", "Bot", "Bot"]; 
+            if(humanCount >= 2) playerTypes[2] = "Human"; // Opposite side (Yellow)
+            if(humanCount >= 3) playerTypes[1] = "Human"; // Left side (Blue)
+            if(humanCount === 4) playerTypes[3] = "Human"; // Right side (Green)
+
+            turnIndex = 0;
+            buildBoard();
+            document.getElementById("status").innerText = `Red's Turn (${playerTypes[0]})`;
+        }
+
+        function buildBoard() {
+            const boardContainer = document.getElementById("board");
+            boardContainer.innerHTML = "";
+            
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const cell = document.createElement("div");
+                    
+                    if (isVoid(r, c)) {
+                        cell.className = "cell void";
+                    } else {
+                        // Standard alternating checkered background layout
+                        const isLight = (r + c) % 2 === 0;
+                        cell.className = `cell ${isLight ? 'light' : 'dark'}`;
+                        
+                        // Populate initial starting kings for context demo
+                        if (r === 13 && c === 7) { cell.innerText = "♚"; cell.className += " R"; } // Red King
+                        if (r === 7 && c === 0) { cell.innerText = "♚"; cell.className += " B"; } // Blue King
+                        if (r === 0 && c === 6) { cell.innerText = "♚"; cell.className += " Y"; } // Yellow King
+                        if (r === 6 && c === 13) { cell.innerText = "♚"; cell.className += " G"; } // Green King
+                    }
+                    boardContainer.appendChild(cell);
+                }
+            }
+        }
+
+        // Run turn processor loop
+        function nextTurn() {
+            turnIndex = (turnIndex + 1) % 4;
+            const colors = ["Red", "Blue", "Yellow", "Green"];
+            const currentType = playerTypes[turnIndex];
+            
+            document.getElementById("status").innerText = `${colors[turnIndex]}'s Turn (${currentType})`;
+            
+            if(currentType === "Bot") {
+                setTimeout(() => {
+                    alert(`${colors[turnIndex]} Bot instantly processed a safe defensive move!`);
+                    nextTurn();
+                }, 1000);
+            }
+        }
+
+        // Start initialization
+        window.onload = resetGame;
+    </script>
+</body>
+</html>
